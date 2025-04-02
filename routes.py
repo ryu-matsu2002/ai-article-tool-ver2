@@ -7,15 +7,10 @@ from forms import (
     CombinedForm, SiteRegisterForm, ArticleEditForm,
     RegisterForm, LoginForm
 )
-from models import db, Article, Site, User
+from models import db, Article, Site, User, WordPressSite
 from bulk_article_generator import generate_bulk_articles
-from flask import flash, redirect, url_for
-from models import WordPressSite
-from flask_login import current_user, login_required
-from app import app
 
 main = Blueprint('main', __name__)
-
 
 # 🔐 ユーザー登録
 @main.route('/register', methods=['GET', 'POST'])
@@ -29,7 +24,6 @@ def register():
         flash('✅ 登録完了しました。ログインしてください。')
         return redirect(url_for('main.login'))
     return render_template('register.html', form=form)
-
 
 # 🔐 ログイン
 @main.route('/login', methods=['GET', 'POST'])
@@ -45,7 +39,6 @@ def login():
             flash('❌ メールアドレスまたはパスワードが違います。')
     return render_template('login.html', form=form)
 
-
 # 🔐 ログアウト
 @main.route('/logout')
 @login_required
@@ -53,7 +46,6 @@ def logout():
     logout_user()
     flash('👋 ログアウトしました')
     return redirect(url_for('main.login'))
-
 
 # ✅ トップ（ジャンル＋サイト入力 → 自動投稿開始）
 @main.route('/', methods=['GET', 'POST'])
@@ -63,7 +55,7 @@ def index():
     if form.validate_on_submit():
         genre = form.genre.data
 
-        # サイト重複チェック（同URLなら再利用）
+        # サイト重複チェック
         wp_url = form.wp_url.data.rstrip('/')
         site = Site.query.filter_by(wp_url=wp_url, user_id=current_user.id).first()
         if not site:
@@ -84,7 +76,6 @@ def index():
 
     return render_template('index.html', form=form)
 
-
 # ✅ 投稿ログ画面
 @main.route('/post-log')
 @login_required
@@ -92,7 +83,6 @@ def post_log():
     sites = Site.query.filter_by(user_id=current_user.id).all()
     articles = Article.query.filter_by(user_id=current_user.id).order_by(Article.created_at.desc()).all()
 
-    # 投稿済み10件でジャンル入力を促す
     posted_count = sum(1 for a in articles if a.status == 'posted')
     if posted_count > 0 and posted_count % 10 == 0:
         flash("🎉 10記事の投稿が完了しました！次のジャンルを入力して続きを自動投稿しましょう。")
@@ -100,8 +90,7 @@ def post_log():
 
     return render_template("post_log.html", articles=articles)
 
-
-# ✅ サイト登録（個別用）
+# ✅ サイト登録（個別）
 @main.route('/register-site', methods=['GET', 'POST'])
 @login_required
 def register_site():
@@ -120,8 +109,7 @@ def register_site():
         return redirect(url_for('main.index'))
     return render_template('register_site.html', form=form)
 
-
-# 🔍 記事プレビュー
+# 🔍 記事詳細表示
 @main.route('/article/<int:article_id>')
 @login_required
 def article_detail(article_id):
@@ -130,7 +118,6 @@ def article_detail(article_id):
         flash("⚠️ 記事の閲覧権限がありません。")
         return redirect(url_for('main.post_log'))
     return render_template('article_detail.html', article=article)
-
 
 # ✏️ 記事編集
 @main.route('/edit-article/<int:article_id>', methods=["GET", "POST"])
@@ -150,8 +137,7 @@ def edit_article(article_id):
         return redirect(url_for('main.post_log'))
     return render_template('edit_article.html', form=form, article=article)
 
-
-# 🔄 再投稿処理
+# 🔄 再投稿
 @main.route('/retry-post/<int:article_id>', methods=["POST"])
 @login_required
 def retry_post(article_id):
@@ -166,10 +152,11 @@ def retry_post(article_id):
         flash("🔄 記事を再投稿対象に戻しました。")
     return redirect(url_for('main.post_log'))
 
-@app.route('/delete_sites', methods=['POST'])
+# 🗑 サイト情報の一括削除
+@main.route('/delete_sites', methods=['POST'])
 @login_required
 def delete_sites():
     WordPressSite.query.filter_by(user_id=current_user.id).delete()
     db.session.commit()
-    flash('登録サイト情報をすべて削除しました。')
-    return redirect(url_for('dashboard'))  # 適切な遷移先に変更
+    flash('🗑 登録サイト情報をすべて削除しました。')
+    return redirect(url_for('main.index'))
