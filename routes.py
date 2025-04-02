@@ -9,6 +9,10 @@ from forms import (
 )
 from models import db, Article, Site, User
 from bulk_article_generator import generate_bulk_articles
+from flask import flash, redirect, url_for
+from models import WordPressSite
+from flask_login import current_user, login_required
+from app import app
 
 main = Blueprint('main', __name__)
 
@@ -161,3 +165,11 @@ def retry_post(article_id):
         db.session.commit()
         flash("🔄 記事を再投稿対象に戻しました。")
     return redirect(url_for('main.post_log'))
+
+@app.route('/delete_sites', methods=['POST'])
+@login_required
+def delete_sites():
+    WordPressSite.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    flash('登録サイト情報をすべて削除しました。')
+    return redirect(url_for('dashboard'))  # 適切な遷移先に変更

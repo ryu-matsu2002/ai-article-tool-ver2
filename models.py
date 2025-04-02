@@ -43,3 +43,10 @@ class Article(db.Model):
     status = db.Column(db.String(20), default="pending")  # pending, scheduled, posted, failed
     scheduled_time = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class WordPressSite(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    site_url = db.Column(db.String(255), nullable=False)
+    access_token = db.Column(db.String(255), nullable=False)
+    # 他のフィールドもあればここに追加
