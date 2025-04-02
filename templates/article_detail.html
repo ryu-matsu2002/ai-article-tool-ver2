@@ -1,0 +1,14 @@
+<!-- templates/article_detail.html -->
+{% extends 'base.html' %}
+{% block title %}記事プレビュー{% endblock %}
+
+{% block content %}
+<h2>{{ article.title }}</h2>
+{% if article.featured_image_url %}
+  <img src="{{ article.featured_image_url }}" class="img-fluid rounded mb-3" alt="記事画像">
+{% endif %}
+<div style="white-space: pre-wrap;" class="card p-4">
+  {{ article.content }}
+</div>
+<a href="{{ url_for('main.post_log') }}" class="btn btn-secondary mt-3">← 投稿ログに戻る</a>
+{% endblock %}

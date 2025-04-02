@@ -1,0 +1,54 @@
+<!-- templates/post_log.html -->
+{% extends 'base.html' %}
+{% block title %}投稿ログ{% endblock %}
+
+{% block content %}
+<h2>📝 投稿ログ一覧</h2>
+
+<form method="get" class="mb-3">
+  <label class="form-label">ステータスで絞り込み：</label>
+  <select name="status" class="form-select w-auto d-inline" onchange="this.form.submit()">
+    <option value="">すべて</option>
+    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>⏳ 未投稿</option>
+    <option value="scheduled" {% if selected_status == 'scheduled' %}selected{% endif %}>📅 投稿予定</option>
+    <option value="posted" {% if selected_status == 'posted' %}selected{% endif %}>✅ 投稿済</option>
+    <option value="failed" {% if selected_status == 'failed' %}selected{% endif %}>❌ 失敗</option>
+  </select>
+</form>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>タイトル</th>
+      <th>キーワード</th>
+      <th>ステータス</th>
+      <th>投稿予定</th>
+      <th>作成日時</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for article in articles %}
+    <tr>
+      <td>{{ article.id }}</td>
+      <td>{{ article.title }}</td>
+      <td>{{ article.keyword }}</td>
+      <td>{{ article.status }}</td>
+      <td>{{ article.scheduled_time or '-' }}</td>
+      <td>{{ article.created_at }}</td>
+      <td>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.article_detail', article_id=article.id) }}">🔍</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.edit_article', article_id=article.id) }}">✏️</a>
+        {% if article.status == 'failed' %}
+        <form method="POST" action="{{ url_for('main.retry_post', article_id=article.id) }}" style="display:inline;">
+          {{ csrf_token() }}
+          <button class="btn btn-sm btn-outline-danger" type="submit">🔄</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

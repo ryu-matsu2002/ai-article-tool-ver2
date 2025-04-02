@@ -1,0 +1,19 @@
+<!-- templates/register_site.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>WordPressサイト登録</title>
+</head>
+<body>
+    <h1>WordPressサイトを登録</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <p>{{ form.site_name.label }}<br>{{ form.site_name(size=40) }}</p>
+        <p>{{ form.wp_url.label }}<br>{{ form.wp_url(size=40) }}</p>
+        <p>{{ form.wp_username.label }}<br>{{ form.wp_username(size=40) }}</p>
+        <p>{{ form.wp_app_password.label }}<br>{{ form.wp_app_password(size=40) }}</p>
+        <p>{{ form.submit() }}</p>
+    </form>
+</body>
+</html>

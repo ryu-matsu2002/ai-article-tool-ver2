@@ -1,0 +1,38 @@
+<!-- templates/index.html -->
+{% extends 'base.html' %}
+{% block title %}ジャンル＋サイト登録{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">ジャンルと投稿先サイトの入力</h2>
+
+<form method="POST" class="card p-4 shadow-sm">
+  {{ form.hidden_tag() }}
+
+  <div class="mb-3">
+    {{ form.genre.label(class="form-label") }}
+    {{ form.genre(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.site_name.label(class="form-label") }}
+    {{ form.site_name(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.wp_url.label(class="form-label") }}
+    {{ form.wp_url(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.wp_username.label(class="form-label") }}
+    {{ form.wp_username(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.wp_app_password.label(class="form-label") }}
+    {{ form.wp_app_password(class="form-control") }}
+  </div>
+
+  {{ form.submit(class="btn btn-primary") }}
+</form>
+{% endblock %}
