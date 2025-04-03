@@ -19,7 +19,7 @@ def create_app():
 
     # アプリ設定
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "devkey")
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/mydatabase.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mydatabase.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # 拡張機能のアプリへの登録
