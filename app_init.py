@@ -39,4 +39,8 @@ def create_app():
     from routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
+    # ✅ ここを追加 → DBテーブル作成（Flaskアプリのコンテキスト内で）
+    with app.app_context():
+        db.create_all()
+
     return app
