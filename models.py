@@ -1,4 +1,3 @@
-# models.py
 from extensions import db
 from flask_login import UserMixin
 from datetime import datetime
@@ -36,7 +35,7 @@ class Article(db.Model):
     keyword = db.Column(db.String(200), nullable=False)
     title = db.Column(db.String(300), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    preview_html = db.Column(db.Text)  # 投稿前のプレビュー用HTML
+    preview_html = db.Column(db.Text)
     featured_image_url = db.Column(db.String(300))
 
     status = db.Column(db.String(20), default="draft")  # draft, scheduled, posted, error
@@ -44,20 +43,27 @@ class Article(db.Model):
     posted_time = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    gpt_tokens = db.Column(db.Integer)      # ChatGPT API使用トークン数
-    gpt_cost_usd = db.Column(db.Float)      # トークンに応じた課金額
+    gpt_tokens = db.Column(db.Integer)
+    gpt_cost_usd = db.Column(db.Float)
 
-# ✅ 投稿進捗ログ（投稿処理のステップ可視化）
+# ✅ 投稿ログ（記事単位、詳細ステップ記録用）
 class PostLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    site_id = db.Column(db.Integer, db.ForeignKey('site.id'), nullable=False)
+    __tablename__ = "post_log"
+    __table_args__ = {'extend_existing': True}
 
-    step = db.Column(db.String(100))         # 例: "キーワード生成", "記事1作成"
-    status = db.Column(db.String(20))        # success, pending, error
-    message = db.Column(db.Text)             # ログ内容
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey("article.id"))
+    site_id = db.Column(db.Integer, db.ForeignKey("site.id"))
+    step = db.Column(db.String(100))  # 例: "キーワード取得", "記事生成完了"
+    genre = db.Column(db.String(100))
+    keyword = db.Column(db.String(255))
+    title = db.Column(db.String(300))
+    preview_html = db.Column(db.Text)
+    gpt_tokens = db.Column(db.Integer)
+    gpt_cost_usd = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ✅ 外部連携（今後の拡張用、例：OAuth認証）
+# ✅ 外部連携（今後の拡張用）
 class WordPressSite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
