@@ -14,9 +14,9 @@
         {% if current_user.is_authenticated %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.post_log') }}">投稿ログ</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">ダッシュボード</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">ログアウト</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.logout') }}">ログアウト</a></li>
         {% else %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">ログイン</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.login') }}">ログイン</a></li>
         {% endif %}
       </ul>
     </div>

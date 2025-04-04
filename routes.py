@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user, login_user
+from flask_login import login_required, current_user, login_user, logout_user
 from werkzeug.security import check_password_hash
 
 from extensions import db
@@ -21,6 +21,14 @@ def login():
             return redirect(url_for('main.index'))
         flash('❌ メールアドレスまたはパスワードが正しくありません。')
     return render_template('login.html', form=form)
+
+# 🚪 ログアウト機能（←追加）
+@main.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash("👋 ログアウトしました。")
+    return redirect(url_for('main.login'))
 
 # ✅ ダッシュボード
 @main.route('/')
