@@ -1,18 +1,19 @@
-# post_scheduler.py
 import random
 from datetime import datetime, timedelta, time
 from apscheduler.schedulers.background import BackgroundScheduler
-from wordpress_client import post_to_wordpress
+
 from article_generator import generate_article
-from models import db, Site, Article  # Articleモデルは必要に応じて定義
+from models import db, Site, Article
+from wordpress_client import post_to_wordpress
+from utils.logger import log_article_progress
 
 scheduler = BackgroundScheduler()
 
-# 1日の投稿時間帯（例：朝、昼、夜）
+# 投稿時間帯（朝・昼・夜）
 PREFERRED_HOURS = [
-    (9, 11),   # 朝（9時～11時）
-    (13, 15),  # 昼（13時～15時）
-    (18, 21),  # 夜（18時～21時）
+    (9, 11),
+    (13, 15),
+    (18, 21),
 ]
 
 def choose_random_time(start_hour, end_hour):
@@ -44,12 +45,12 @@ def schedule_daily_articles(app):
                 id=f"post_{article.id}"
             )
 
-            # DBにスケジュール時刻を保存（任意）
+            # ステータス・時刻をDBに保存
             article.scheduled_time = post_datetime
             article.status = "scheduled"
             db.session.commit()
 
-            print(f"📅 記事ID {article.id} を {post_datetime} に予約しました")
+            print(f"📅 記事ID {article.id} を {post_datetime.strftime('%Y-%m-%d %H:%M')} に予約しました")
 
 def submit_article(article_id, app):
     """
@@ -57,7 +58,18 @@ def submit_article(article_id, app):
     """
     with app.app_context():
         article = Article.query.get(article_id)
+
+        if not article:
+            print(f"⚠️ 記事ID {article_id} が見つかりません")
+            return
+        if article.status != "scheduled":
+            print(f"⏸ 記事ID {article.id} はスケジュール状態ではありません（現在: {article.status}）")
+            return
+
         site = Site.query.get(article.site_id)
+        if not site:
+            print(f"⚠️ サイトID {article.site_id} が見つかりません")
+            return
 
         result = post_to_wordpress(
             title=article.title,
@@ -66,26 +78,29 @@ def submit_article(article_id, app):
             username=site.wp_username,
             app_password=site.wp_app_password,
             featured_image_url=article.featured_image_url,
-            category_name="AI記事",  # 任意で固定 or 動的に指定
+            category_name="AI記事",
             publish=True
         )
 
         if result:
             article.status = "posted"
+            article.posted_time = datetime.utcnow()
             db.session.commit()
+            log_article_progress(step="投稿完了", article_id=article.id)
             print(f"✅ 記事ID {article.id} 投稿完了")
         else:
             article.status = "failed"
             db.session.commit()
+            log_article_progress(step="投稿失敗", article_id=article.id)
             print(f"❌ 記事ID {article.id} 投稿失敗")
 
 def start_scheduler(app):
     """
-    スケジューラーの起動
+    スケジューラー起動設定
     """
     scheduler.start()
 
-    # 毎日00:00に3記事の投稿予約を行う
+    # 毎日深夜0:00に投稿スケジュールを予約
     scheduler.add_job(
         func=lambda: schedule_daily_articles(app),
         trigger='cron',

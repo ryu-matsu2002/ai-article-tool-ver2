@@ -1,21 +1,25 @@
 # article_generator.py
+
 import openai
 import os
 import requests
+import time
 from dotenv import load_dotenv
+from utils.logger import log_article_progress  # ✅ ロガー追加
 
 # .envの読み込み
 load_dotenv()
 
-# OpenAIとPixabayのAPIキー設定
+# APIキー
 openai.api_key = os.getenv("OPENAI_API_KEY")
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
 
+# APIコスト計算用（GPT-4）
+GPT4_INPUT_COST = 0.01 / 1000  # $0.01 / 1K tokens
+GPT4_OUTPUT_COST = 0.03 / 1000  # $0.03 / 1K tokens
+
 
 def generate_title_from_keyword(keyword):
-    """
-    入力キーワードに基づいて、Q&A形式のSEO記事タイトルを1つ生成
-    """
     prompt = f"""
 あなたはSEOとコンテンツマーケティングの専門家です。
 
@@ -29,7 +33,6 @@ WEBサイトのQ＆A記事コンテンツに使用する「記事タイトル」
 キーワード: {keyword}
 出力形式: 箇条書き
 """
-
     try:
         response = openai.chat.completions.create(
             model="gpt-4",
@@ -38,7 +41,7 @@ WEBサイトのQ＆A記事コンテンツに使用する「記事タイトル」
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=500
+            max_tokens=500  # ✅ タイトルは短く済むので変更なし
         )
 
         output = response.choices[0].message.content
@@ -51,9 +54,6 @@ WEBサイトのQ＆A記事コンテンツに使用する「記事タイトル」
 
 
 def generate_article_body(title):
-    """
-    タイトルに対してQ&A形式のSEO記事本文を生成（2500〜3500文字程度）
-    """
     prompt = f"""
 あなたはSEOとコンテンツマーケティングの専門家です。
 
@@ -73,7 +73,6 @@ def generate_article_body(title):
 ・親友に向けて話すように書いてください（ただし敬語を使ってください）
 ・読み手のことは「皆さん」ではなく必ず「あなた」と書いてください。
 """
-
     try:
         response = openai.chat.completions.create(
             model="gpt-4",
@@ -82,20 +81,28 @@ def generate_article_body(title):
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=3000
+            max_tokens=2000  # ✅ コスト削減＆タイムアウト対策
         )
 
-        return response.choices[0].message.content.strip()
+        usage = response.usage
+        content = response.choices[0].message.content.strip()
+
+        return {
+            "body": content,
+            "input_tokens": usage.prompt_tokens,
+            "output_tokens": usage.completion_tokens
+        }
 
     except Exception as e:
         print("本文生成エラー:", e)
-        return "本文生成に失敗しました。"
+        return {
+            "body": "本文生成に失敗しました。",
+            "input_tokens": 0,
+            "output_tokens": 0
+        }
 
 
 def get_pixabay_images(keyword, num_images=2):
-    """
-    Pixabayから画像URLを取得
-    """
     url = "https://pixabay.com/api/"
     params = {
         "key": PIXABAY_API_KEY,
@@ -118,19 +125,47 @@ def get_pixabay_images(keyword, num_images=2):
         return []
 
 
-def generate_article(keyword):
+def generate_article(keyword, genre=None, user_id=None, site_id=None):
     """
-    キーワードから記事一式を生成（タイトル＋本文＋画像）
+    キーワードから記事一式を生成（タイトル＋本文＋画像＋ログ記録＋インターバル付き）
     """
+    time.sleep(3)  # インターバル①：キーワードごとに待機
+
     title = generate_title_from_keyword(keyword)
-    content = generate_article_body(title)
-    image_keyword = keyword  # ここでは入力キーワードを画像検索用にも使う
-    images = get_pixabay_images(image_keyword)
+    time.sleep(3)  # インターバル②：タイトル生成後に待機
+
+    article_data = generate_article_body(title)
+    content = article_data["body"]
+    input_tokens = article_data["input_tokens"]
+    output_tokens = article_data["output_tokens"]
+    gpt_cost = input_tokens * GPT4_INPUT_COST + output_tokens * GPT4_OUTPUT_COST
+
+    images = get_pixabay_images(keyword)
+    featured_image = images[0] if len(images) > 0 else ""
+    content_image = images[1] if len(images) > 1 else ""
+
+    # ✅ プレビューHTML作成
+    preview_html = f"<h2>{title}</h2>\n<img src='{featured_image}' style='max-width:100%;'>\n<p>{content[:300]}...</p>"
+
+    # ✅ ログ記録
+    log_article_progress(
+        step="記事生成完了",
+        genre=genre,
+        keyword=keyword,
+        title=title,
+        preview_html=preview_html,
+        gpt_tokens=input_tokens + output_tokens,
+        gpt_cost_usd=gpt_cost,
+        user_id=user_id,
+        site_id=site_id
+    )
 
     return {
         "title": title,
         "content": content,
-        "image_keyword": image_keyword,
-        "featured_image_url": images[0] if len(images) > 0 else "",
-        "content_image_url": images[1] if len(images) > 1 else ""
+        "image_keyword": keyword,
+        "featured_image_url": featured_image,
+        "content_image_url": content_image,
+        "gpt_tokens": input_tokens + output_tokens,
+        "gpt_cost_usd": gpt_cost
     }

@@ -77,18 +77,40 @@ def index():
     return render_template('index.html', form=form)
 
 # ✅ 投稿ログ画面
+# ✅ 投稿ログ画面（修正版）
 @main.route('/post-log')
 @login_required
 def post_log():
-    sites = Site.query.filter_by(user_id=current_user.id).all()
-    articles = Article.query.filter_by(user_id=current_user.id).order_by(Article.created_at.desc()).all()
+    # サイトとステータスの絞り込みパラメータ取得
+    site_id = request.args.get("site_id", type=int)
+    status = request.args.get("status")
 
+    # ログインユーザーのサイト一覧を取得
+    user_sites = Site.query.filter_by(user_id=current_user.id).all()
+
+    # 記事取得クエリ
+    query = Article.query.filter_by(user_id=current_user.id)
+    if site_id:
+        query = query.filter_by(site_id=site_id)
+    if status:
+        query = query.filter_by(status=status)
+
+    articles = query.order_by(Article.created_at.desc()).all()
+
+    # 🎉 投稿10件ごとに通知
     posted_count = sum(1 for a in articles if a.status == 'posted')
     if posted_count > 0 and posted_count % 10 == 0:
         flash("🎉 10記事の投稿が完了しました！次のジャンルを入力して続きを自動投稿しましょう。")
         return redirect(url_for('main.index'))
 
-    return render_template("post_log.html", articles=articles)
+    return render_template(
+        "post_log.html",
+        articles=articles,
+        user_sites=user_sites,
+        selected_site_id=site_id,
+        selected_status=status
+    )
+
 
 # ✅ サイト登録（個別）
 @main.route('/register-site', methods=['GET', 'POST'])
