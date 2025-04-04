@@ -21,7 +21,8 @@
     {% endwith %}
 
     <!-- サイト情報一括削除フォーム -->
-    <form action="{{ url_for('delete_sites') }}" method="post" onsubmit="return confirm('本当に全てのサイト情報を削除しますか？');">
+    <form action="{{ url_for('main.delete_sites') }}"
+          method="post" onsubmit="return confirm('本当に全てのサイト情報を削除しますか？');">
         {% if csrf_token %}
             {{ csrf_token() }}
         {% endif %}
@@ -30,7 +31,7 @@
 
     <p><strong>選択されたジャンル:</strong> {{ genre }}</p>
 
-    <!-- 登録済みサイト情報表示（オプションで） -->
+    <!-- 登録済みサイト情報表示 -->
     {% if sites %}
         <h5 class="mt-4">登録済みのサイト</h5>
         <ul class="list-group">
