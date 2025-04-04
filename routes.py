@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from extensions import db
 from models import Site, Article, PostLog
 from article_generator import generate_article
-from .utils.logger import log_article_progress
+from utils.logger import log_article_progress
 
 main = Blueprint('main', __name__)
 
