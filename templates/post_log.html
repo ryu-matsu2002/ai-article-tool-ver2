@@ -5,6 +5,31 @@
 {% block content %}
 <h2>📝 投稿ログ一覧</h2>
 
+<!-- 🔘 記事生成開始フォーム -->
+<form method="POST" action="{{ url_for('main.start_generation') }}" class="mb-4 border p-3 rounded bg-light">
+  <div class="row g-3 align-items-center">
+    <div class="col-auto">
+      <label for="site_id" class="col-form-label">サイト：</label>
+    </div>
+    <div class="col-auto">
+      <select name="site_id" id="site_id" class="form-select">
+        {% for site in user_sites %}
+          <option value="{{ site.id }}">{{ site.site_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="genre" class="col-form-label">ジャンル：</label>
+    </div>
+    <div class="col-auto">
+      <input type="text" name="genre" id="genre" class="form-control" required placeholder="例：旅行、美容、健康">
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">🛠️ 記事生成開始</button>
+    </div>
+  </div>
+</form>
+
 <!-- ✅ サイト別切り替え -->
 <form method="get" class="mb-3 d-flex flex-wrap align-items-center gap-3">
   <div>
