@@ -1,11 +1,9 @@
 # models.py
-from flask_sqlalchemy import SQLAlchemy
+from extensions import db
 from flask_login import UserMixin
 from datetime import datetime
 
-db = SQLAlchemy()
-
-# ✅ ユーザー
+# ✅ ユーザー情報（ログイン管理対象）
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -13,7 +11,6 @@ class User(db.Model, UserMixin):
 
     sites = db.relationship('Site', backref='user', lazy=True)
     articles = db.relationship('Article', backref='user', lazy=True)
-
 
 # ✅ WordPressサイト情報
 class Site(db.Model):
@@ -27,8 +24,7 @@ class Site(db.Model):
 
     articles = db.relationship('Article', backref='site', lazy=True)
 
-
-# ✅ 生成された記事情報
+# ✅ 記事情報
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
@@ -44,9 +40,9 @@ class Article(db.Model):
     scheduled_time = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ✅ 外部連携情報（例：WordPress API Token など）
 class WordPressSite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     site_url = db.Column(db.String(255), nullable=False)
     access_token = db.Column(db.String(255), nullable=False)
-    # 他のフィールドもあればここに追加
