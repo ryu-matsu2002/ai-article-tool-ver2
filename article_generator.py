@@ -5,7 +5,8 @@ import os
 import requests
 import time
 from dotenv import load_dotenv
-from .utils.logger import log_article_progress  # ✅ ロガー追加
+from .utils.logger import log_article_progress
+
 
 # .envの読み込み
 load_dotenv()
