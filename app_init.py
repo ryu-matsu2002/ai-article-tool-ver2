@@ -1,6 +1,6 @@
 # app_init.py
 from flask import Flask
-from extensions import db, login_manager, csrf
+from extensions import db, login_manager, csrf, migrate
 from dotenv import load_dotenv
 import os
 
@@ -11,13 +11,14 @@ def create_app():
 
     # アプリ設定
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "devkey")
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")  # PostgreSQL用のURL
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # 拡張機能の初期化
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
+    migrate.init_app(app, db)
 
     login_manager.login_view = 'main.login'
 
@@ -27,12 +28,8 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # ルーティング（Blueprint登録）
+    # ルーティング
     from routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
-
-    # DBテーブル作成（初回のみ）
-    with app.app_context():
-        db.create_all()
 
     return app
