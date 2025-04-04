@@ -7,8 +7,6 @@ from models import db, Site, Article
 from wordpress_client import post_to_wordpress
 from utils.logger import log_article_progress
 
-from app import app  # ← Render環境で app を取得するために明示的にインポート
-
 scheduler = BackgroundScheduler()
 
 # 投稿時間帯（朝・昼・夜）
@@ -23,7 +21,7 @@ def choose_random_time(start_hour, end_hour):
     minute = random.randint(0, 59)
     return time(hour, minute)
 
-def schedule_daily_articles():
+def schedule_daily_articles(app):
     """
     毎日0時に呼び出され、その日の3投稿を予約
     """
@@ -38,23 +36,21 @@ def schedule_daily_articles():
             rand_time = choose_random_time(start_hour, end_hour)
             post_datetime = datetime.combine(datetime.today(), rand_time)
 
-            # 投稿処理をスケジューリング
             scheduler.add_job(
                 func=submit_article,
                 trigger='date',
                 run_date=post_datetime,
-                args=[article.id],
+                args=[article.id, app],  # ← app を引数で渡す
                 id=f"post_{article.id}"
             )
 
-            # ステータス・時刻を更新
             article.scheduled_time = post_datetime
             article.status = "scheduled"
             db.session.commit()
 
             print(f"📅 記事ID {article.id} を {post_datetime.strftime('%Y-%m-%d %H:%M')} に予約しました")
 
-def submit_article(article_id):
+def submit_article(article_id, app):
     """
     スケジュールされた時間に記事を投稿
     """
@@ -96,24 +92,18 @@ def submit_article(article_id):
             log_article_progress(step="投稿失敗", article_id=article.id)
             print(f"❌ 記事ID {article.id} 投稿失敗")
 
-def start_scheduler():
+def start_scheduler(app):
     """
-    スケジューラーを起動して毎日0時に投稿予約処理を登録
+    スケジューラー起動設定
     """
     scheduler.start()
 
+    # 毎日深夜0:00に投稿スケジュールを予約
     scheduler.add_job(
-        func=schedule_daily_articles,
+        func=lambda: schedule_daily_articles(app),
         trigger='cron',
         hour=0,
         minute=0
     )
 
     print("⏱ スケジューラーが起動しました")
-
-def schedule_post():
-    """
-    Renderでエラーなくインポートされるためのエントリポイント関数
-    """
-    print("📢 schedule_post() が呼び出されました")
-    start_scheduler()

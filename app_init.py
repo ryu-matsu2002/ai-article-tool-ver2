@@ -28,8 +28,12 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # ルーティング
+    # Blueprint登録
     from routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
+
+    # ✅ スケジューラー起動
+    from post_scheduler import start_scheduler
+    start_scheduler(app)
 
     return app
